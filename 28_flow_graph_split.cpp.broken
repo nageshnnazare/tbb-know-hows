@@ -1,0 +1,89 @@
+/*
+ * TBB FLOW_GRAPH SPLIT - Tuple Decomposition
+ */
+
+#include <iostream>
+#include <cmath>
+#include <tuple>
+#include <tbb/flow_graph.h>
+
+using namespace std;
+using namespace tbb;
+using namespace tbb::flow;
+
+void example1_basic_split() {
+    cout << "\n=== Example 1: Basic Split ===" << endl;
+    
+    graph g;
+    
+    typedef tuple<int, string> data_tuple;
+    
+    function_node<int, data_tuple> source(g, unlimited,
+        [](int x) {
+            return make_tuple(x * 10, "Value_" + to_string(x));
+        });
+    
+    split_node<data_tuple> splitter(g);
+    
+    function_node<int, void> num_handler(g, unlimited,
+        [](int x) { cout << "  Number: " << x << endl; });
+    
+    function_node<string, void> str_handler(g, unlimited,
+        [](string s) { cout << "  String: " << s << endl; });
+    
+    make_edge(source, splitter);
+    make_edge(output_port<0>(splitter), num_handler);
+    make_edge(output_port<1>(splitter), str_handler);
+    
+    source.try_put(5);
+    g.wait_for_all();
+}
+
+void example2_three_way_split() {
+    cout << "\n=== Example 2: Three-Way Split ===" << endl;
+    
+    graph g;
+    
+    typedef tuple<int, double, string> triple;
+    
+    function_node<int, triple> source(g, unlimited,
+        [](int x) {
+            return make_tuple(x, x * 1.5, "Item_" + to_string(x));
+        });
+    
+    split_node<triple> splitter(g);
+    
+    function_node<int, void> h1(g, unlimited,
+        [](int x) { cout << "  Int: " << x << endl; });
+    function_node<double, void> h2(g, unlimited,
+        [](double x) { cout << "  Double: " << x << endl; });
+    function_node<string, void> h3(g, unlimited,
+        [](string s) { cout << "  String: " << s << endl; });
+    
+    make_edge(source, splitter);
+    make_edge(output_port<0>(splitter), h1);
+    make_edge(output_port<1>(splitter), h2);
+    make_edge(output_port<2>(splitter), h3);
+    
+    source.try_put(10);
+    g.wait_for_all();
+}
+
+int main() {
+    cout << "╔════════════════════════════════════════════════════════╗" << endl;
+    cout << "║   TBB flow_graph_split - Complete Tutorial            ║" << endl;
+    cout << "╚════════════════════════════════════════════════════════╝" << endl;
+    
+    example1_basic_split();
+    example2_three_way_split();
+    
+    cout << "\n╔════════════════════════════════════════════════════════╗" << endl;
+    cout << "║                    KEY TAKEAWAYS                       ║" << endl;
+    cout << "╠════════════════════════════════════════════════════════╣" << endl;
+    cout << "║  1. Decomposes tuple into separate outputs            ║" << endl;
+    cout << "║  2. One-to-many routing by type                       ║" << endl;
+    cout << "║  3. Opposite of join_node                             ║" << endl;
+    cout << "╚════════════════════════════════════════════════════════╝" << endl;
+    
+    return 0;
+}

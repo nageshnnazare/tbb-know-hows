@@ -1,0 +1,95 @@
+/*
+ * TBB FLOW_GRAPH PRIORITIES - Priority-Based Processing
+ */
+
+#include <iostream>
+#include <cmath>
+#include <tbb/flow_graph.h>
+
+using namespace std;
+using namespace tbb;
+using namespace tbb::flow;
+
+struct Task {
+    int priority;
+    string name;
+    
+    Task(int p = 0, string n = "") : priority(p), name(n) {}
+    
+    bool operator<(const Task& other) const {
+        return priority < other.priority;  // Higher priority first
+    }
+};
+
+void example1_priority_queue() {
+    cout << "\n=== Example 1: Priority Queue Node ===" << endl;
+    
+    graph g;
+    
+    priority_queue_node<Task> pq(g);
+    
+    function_node<Task, void> processor(g, serial,
+        [](Task t) {
+            cout << "  Processing [P=" << t.priority << "]: " 
+                 << t.name << endl;
+        });
+    
+    make_edge(pq, processor);
+    
+    pq.try_put(Task(5, "Medium"));
+    pq.try_put(Task(10, "High"));
+    pq.try_put(Task(1, "Low"));
+    pq.try_put(Task(15, "Critical"));
+    pq.try_put(Task(7, "Important"));
+    
+    g.wait_for_all();
+    cout << "Tasks processed by priority!" << endl;
+}
+
+void example2_priority_pipeline() {
+    cout << "\n=== Example 2: Priority Pipeline ===" << endl;
+    
+    graph g;
+    
+    function_node<Task, Task> generator(g, unlimited,
+        [](Task t) {
+            cout << "  Generated: " << t.name << endl;
+            return t;
+        });
+    
+    priority_queue_node<Task> scheduler(g);
+    
+    function_node<Task, void> processor(g, serial,
+        [](Task t) {
+            cout << "  Processing [P=" << t.priority << "]: " 
+                 << t.name << endl;
+        });
+    
+    make_edge(generator, scheduler);
+    make_edge(scheduler, processor);
+    
+    generator.try_put(Task(3, "Task_A"));
+    generator.try_put(Task(10, "Task_B"));
+    generator.try_put(Task(1, "Task_C"));
+    
+    g.wait_for_all();
+}
+
+int main() {
+    cout << "╔════════════════════════════════════════════════════════╗" << endl;
+    cout << "║  TBB flow_graph_priorities - Complete Tutorial        ║" << endl;
+    cout << "╚════════════════════════════════════════════════════════╝" << endl;
+    
+    example1_priority_queue();
+    example2_priority_pipeline();
+    
+    cout << "\n╔════════════════════════════════════════════════════════╗" << endl;
+    cout << "║                    KEY TAKEAWAYS                       ║" << endl;
+    cout << "╠════════════════════════════════════════════════════════╣" << endl;
+    cout << "║  1. priority_queue_node processes highest first       ║" << endl;
+    cout << "║  2. Custom comparators supported                      ║" << endl;
+    cout << "║  3. Perfect for priority-based scheduling             ║" << endl;
+    cout << "╚════════════════════════════════════════════════════════╝" << endl;
+    
+    return 0;
+}

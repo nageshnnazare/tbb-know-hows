@@ -1,0 +1,84 @@
+/*
+ * TBB FLOW_GRAPH JOIN - Synchronization and Combining
+ */
+
+#include <iostream>
+#include <cmath>
+#include <tuple>
+#include <tbb/flow_graph.h>
+
+using namespace std;
+using namespace tbb;
+using namespace tbb::flow;
+
+void example1_basic_join() {
+    cout << "\n=== Example 1: Basic Join ===" << endl;
+    
+    graph g;
+    
+    typedef tuple<int, string> joined;
+    join_node<joined> joiner(g);
+    
+    function_node<int, int> num_gen(g, unlimited,
+        [](int x) { return x * 10; });
+    
+    function_node<int, string> str_gen(g, unlimited,
+        [](int x) { return "Value_" + to_string(x); });
+    
+    function_node<joined, void> processor(g, unlimited,
+        [](joined t) {
+            cout << "  Joined: (" << get<0>(t) << ", " 
+                 << get<1>(t) << ")" << endl;
+        });
+    
+    make_edge(num_gen, input_port<0>(joiner));
+    make_edge(str_gen, input_port<1>(joiner));
+    make_edge(joiner, processor);
+    
+    num_gen.try_put(5);
+    str_gen.try_put(5);
+    
+    g.wait_for_all();
+}
+
+void example2_three_way_join() {
+    cout << "\n=== Example 2: Three-Way Join ===" << endl;
+    
+    graph g;
+    
+    typedef tuple<int, double, string> triple;
+    join_node<triple> joiner(g);
+    
+    function_node<triple, void> processor(g, unlimited,
+        [](triple t) {
+            cout << "  Joined: (" << get<0>(t) << ", " 
+                 << get<1>(t) << ", " << get<2>(t) << ")" << endl;
+        });
+    
+    make_edge(joiner, processor);
+    
+    input_port<0>(joiner).try_put(42);
+    input_port<1>(joiner).try_put(3.14);
+    input_port<2>(joiner).try_put("test");
+    
+    g.wait_for_all();
+}
+
+int main() {
+    cout << "╔════════════════════════════════════════════════════════╗" << endl;
+    cout << "║    TBB flow_graph_join - Complete Tutorial            ║" << endl;
+    cout << "╚════════════════════════════════════════════════════════╝" << endl;
+    
+    example1_basic_join();
+    example2_three_way_join();
+    
+    cout << "\n╔════════════════════════════════════════════════════════╗" << endl;
+    cout << "║                    KEY TAKEAWAYS                       ║" << endl;
+    cout << "╠════════════════════════════════════════════════════════╣" << endl;
+    cout << "║  1. Waits for messages on all input ports             ║" << endl;
+    cout << "║  2. Combines inputs into tuple                        ║" << endl;
+    cout << "║  3. Synchronization point in graph                    ║" << endl;
+    cout << "╚════════════════════════════════════════════════════════╝" << endl;
+    
+    return 0;
+}

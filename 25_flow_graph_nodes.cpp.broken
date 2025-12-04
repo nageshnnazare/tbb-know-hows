@@ -1,0 +1,368 @@
+/*
+ * TBB FLOW_GRAPH NODES - Complete Node Type Reference
+ * 
+ * NODE CATEGORIES:
+ * 1. Functional Nodes: Apply computation
+ *    - function_node
+ *    - continue_node
+ *    - multifunction_node
+ * 
+ * 2. Buffering Nodes: Store messages
+ *    - buffer_node
+ *    - queue_node
+ *    - priority_queue_node
+ *    - overwrite_node
+ * 
+ * 3. Split/Join Nodes: Combine/separate data
+ *    - join_node
+ *    - split_node
+ *    - indexer_node
+ * 
+ * 4. Other Nodes:
+ *    - broadcast_node
+ *    - limiter_node
+ *    - sequencer_node
+ */
+
+#include <iostream>
+#include <cmath>
+#include <string>
+#include <tuple>
+#include <tbb/flow_graph.h>
+
+using namespace std;
+using namespace tbb;
+using namespace tbb::flow;
+
+// ============= Example 1: function_node =============
+
+void example1_function_node() {
+    cout << "\n=== Example 1: function_node ===" << endl;
+    
+    graph g;
+    
+    // function_node<Input, Output>
+    function_node<int, int> square(g, unlimited,
+        [](int x) {
+            cout << "  Square(" << x << ") = " << x*x << endl;
+            return x * x;
+        });
+    
+    function_node<int, void> printer(g, unlimited,
+        [](int x) {
+            cout << "  Final: " << x << endl;
+        });
+    
+    make_edge(square, printer);
+    
+    for(int i = 1; i <= 5; ++i) {
+        square.try_put(i);
+    }
+    
+    g.wait_for_all();
+}
+
+// ============= Example 2: continue_node =============
+
+void example2_continue_node() {
+    cout << "\n=== Example 2: continue_node ===" << endl;
+    
+    graph g;
+    
+    // continue_node triggered by continue_msg
+    continue_node<continue_msg> task1(g,
+        [](const continue_msg&) {
+            cout << "  Task 1 executing" << endl;
+        });
+    
+    continue_node<continue_msg> task2(g,
+        [](const continue_msg&) {
+            cout << "  Task 2 executing (after Task 1)" << endl;
+        });
+    
+    make_edge(task1, task2);
+    
+    task1.try_put(continue_msg());
+    g.wait_for_all();
+}
+
+// ============= Example 3: multifunction_node =============
+
+void example3_multifunction_node() {
+    cout << "\n=== Example 3: multifunction_node ===" << endl;
+    
+    graph g;
+    
+    // multifunction_node can output to multiple ports
+    typedef multifunction_node<int, tuple<int, int>> splitter_type;
+    splitter_type splitter(g, unlimited,
+        [](int x, splitter_type::output_ports_type& ports) {
+            if(x % 2 == 0) {
+                get<0>(ports).try_put(x);  // Even port
+            } else {
+                get<1>(ports).try_put(x);  // Odd port
+            }
+        });
+    
+    function_node<int, void> even_handler(g, unlimited,
+        [](int x) { cout << "  Even: " << x << endl; });
+    
+    function_node<int, void> odd_handler(g, unlimited,
+        [](int x) { cout << "  Odd: " << x << endl; });
+    
+    make_edge(output_port<0>(splitter), even_handler);
+    make_edge(output_port<1>(splitter), odd_handler);
+    
+    for(int i = 1; i <= 10; ++i) {
+        splitter.try_put(i);
+    }
+    
+    g.wait_for_all();
+}
+
+// ============= Example 4: buffer_node vs queue_node =============
+
+void example4_buffering_nodes() {
+    cout << "\n=== Example 4: Buffering Nodes ===" << endl;
+    
+    graph g;
+    
+    // buffer_node: arbitrary removal order
+    buffer_node<int> buffer(g);
+    
+    // queue_node: FIFO order
+    queue_node<int> queue(g);
+    
+    // priority_queue_node: highest priority first
+    priority_queue_node<int> pq(g);
+    
+    function_node<int, void> consumer(g, serial,
+        [](int x) { cout << "  Consumed: " << x << endl; });
+    
+    make_edge(queue, consumer);
+    
+    cout << "Using queue_node (FIFO):" << endl;
+    for(int i = 1; i <= 5; ++i) {
+        queue.try_put(i);
+    }
+    
+    g.wait_for_all();
+}
+
+// ============= Example 5: join_node =============
+
+void example5_join_node() {
+    cout << "\n=== Example 5: join_node ===" << endl;
+    
+    graph g;
+    
+    // Join two inputs
+    typedef tuple<int, string> joined_type;
+    join_node<joined_type> joiner(g);
+    
+    function_node<int, int> num_source(g, unlimited,
+        [](int x) {
+            cout << "  Number: " << x << endl;
+            return x * 10;
+        });
+    
+    function_node<int, string> str_source(g, unlimited,
+        [](int x) {
+            string s = "Value_" + to_string(x);
+            cout << "  String: " << s << endl;
+            return s;
+        });
+    
+    function_node<joined_type, void> processor(g, unlimited,
+        [](joined_type t) {
+            cout << "  Joined: (" << get<0>(t) << ", " << get<1>(t) << ")" << endl;
+        });
+    
+    make_edge(num_source, input_port<0>(joiner));
+    make_edge(str_source, input_port<1>(joiner));
+    make_edge(joiner, processor);
+    
+    num_source.try_put(5);
+    str_source.try_put(5);
+    
+    g.wait_for_all();
+}
+
+// ============= Example 6: split_node =============
+
+void example6_split_node() {
+    cout << "\n=== Example 6: split_node ===" << endl;
+    
+    graph g;
+    
+    typedef tuple<int, string> data_tuple;
+    
+    // Source produces tuples
+    function_node<int, data_tuple> source(g, unlimited,
+        [](int x) {
+            return make_tuple(x, "Item_" + to_string(x));
+        });
+    
+    // split_node separates tuple components
+    split_node<data_tuple> splitter(g);
+    
+    function_node<int, void> num_handler(g, unlimited,
+        [](int x) { cout << "  Number: " << x << endl; });
+    
+    function_node<string, void> str_handler(g, unlimited,
+        [](string s) { cout << "  String: " << s << endl; });
+    
+    make_edge(source, splitter);
+    make_edge(output_port<0>(splitter), num_handler);
+    make_edge(output_port<1>(splitter), str_handler);
+    
+    source.try_put(42);
+    
+    g.wait_for_all();
+}
+
+// ============= Example 7: limiter_node =============
+
+void example7_limiter_node() {
+    cout << "\n=== Example 7: limiter_node ===" << endl;
+    
+    graph g;
+    
+    // Limit to 3 concurrent messages
+    limiter_node<int> limiter(g, 3);
+    
+    function_node<int, continue_msg> processor(g, unlimited,
+        [](int x) {
+            cout << "  Processing: " << x << endl;
+            this_thread::sleep_for(chrono::milliseconds(100));
+            return continue_msg();
+        });
+    
+    make_edge(limiter, processor);
+    make_edge(processor, limiter.decrement);  // Return token
+    
+    cout << "Sending 10 items (limited to 3 concurrent):" << endl;
+    for(int i = 1; i <= 10; ++i) {
+        limiter.try_put(i);
+    }
+    
+    g.wait_for_all();
+}
+
+// ============= Example 8: Complete Pipeline Example =============
+
+struct Task {
+    int id;
+    string data;
+    Task(int i = 0) : id(i), data("Task_" + to_string(i)) {}
+};
+
+void example8_complete_pipeline() {
+    cout << "\n=== Example 8: Complete Pipeline ===" << endl;
+    
+    graph g;
+    
+    // Stage 1: Generate tasks
+    function_node<int, Task> generator(g, unlimited,
+        [](int id) {
+            cout << "  Generate: Task " << id << endl;
+            return Task(id);
+        });
+    
+    // Stage 2: Process (with concurrency limit)
+    limiter_node<Task> limiter(g, 2);
+    function_node<Task, Task> processor(g, unlimited,
+        [](Task t) {
+            cout << "  Process: " << t.data << endl;
+            this_thread::sleep_for(chrono::milliseconds(50));
+            return t;
+        });
+    
+    // Stage 3: Buffer results
+    queue_node<Task> result_queue(g);
+    
+    // Stage 4: Output
+    function_node<Task, continue_msg> output(g, serial,
+        [](Task t) {
+            cout << "  Output: " << t.data << " completed" << endl;
+            return continue_msg();
+        });
+    
+    // Connect pipeline
+    make_edge(generator, limiter);
+    make_edge(limiter, processor);
+    make_edge(processor, result_queue);
+    make_edge(result_queue, output);
+    make_edge(output, limiter.decrement);
+    
+    // Send tasks
+    for(int i = 1; i <= 5; ++i) {
+        generator.try_put(i);
+    }
+    
+    g.wait_for_all();
+}
+
+int main() {
+    cout << "╔════════════════════════════════════════════════════════╗" << endl;
+    cout << "║   TBB flow_graph_nodes - Complete Tutorial            ║" << endl;
+    cout << "╚════════════════════════════════════════════════════════╝" << endl;
+    
+    example1_function_node();
+    example2_continue_node();
+    example3_multifunction_node();
+    example4_buffering_nodes();
+    example5_join_node();
+    example6_split_node();
+    example7_limiter_node();
+    example8_complete_pipeline();
+    
+    cout << "\n╔════════════════════════════════════════════════════════╗" << endl;
+    cout << "║                    KEY TAKEAWAYS                       ║" << endl;
+    cout << "╠════════════════════════════════════════════════════════╣" << endl;
+    cout << "║                                                        ║" << endl;
+    cout << "║  1. function_node: Apply function to messages         ║" << endl;
+    cout << "║  2. continue_node: Triggered by signals               ║" << endl;
+    cout << "║  3. multifunction_node: Multiple output ports         ║" << endl;
+    cout << "║  4. buffer/queue/priority_queue: Store messages       ║" << endl;
+    cout << "║  5. join_node: Wait for multiple inputs               ║" << endl;
+    cout << "║  6. split_node: Separate tuple components             ║" << endl;
+    cout << "║  7. limiter_node: Control concurrency                 ║" << endl;
+    cout << "║  8. broadcast_node: Send to all successors            ║" << endl;
+    cout << "║                                                        ║" << endl;
+    cout << "╠════════════════════════════════════════════════════════╣" << endl;
+    cout << "║               NODE TYPES SUMMARY                       ║" << endl;
+    cout << "╠════════════════════════════════════════════════════════╣" << endl;
+    cout << "║                                                        ║" << endl;
+    cout << "║  Functional:                                           ║" << endl;
+    cout << "║    function_node<In, Out>  - Transform data           ║" << endl;
+    cout << "║    continue_node<T>        - Triggered computation    ║" << endl;
+    cout << "║    multifunction_node<...> - Multiple outputs         ║" << endl;
+    cout << "║                                                        ║" << endl;
+    cout << "║  Buffering:                                            ║" << endl;
+    cout << "║    buffer_node<T>          - Arbitrary order          ║" << endl;
+    cout << "║    queue_node<T>           - FIFO order               ║" << endl;
+    cout << "║    priority_queue_node<T>  - Priority order           ║" << endl;
+    cout << "║    overwrite_node<T>       - Keep latest only         ║" << endl;
+    cout << "║                                                        ║" << endl;
+    cout << "║  Combining:                                            ║" << endl;
+    cout << "║    join_node<tuple<...>>   - Wait for all inputs      ║" << endl;
+    cout << "║    split_node<tuple<...>>  - Separate tuple           ║" << endl;
+    cout << "║                                                        ║" << endl;
+    cout << "║  Control:                                              ║" << endl;
+    cout << "║    limiter_node<T>         - Limit concurrency        ║" << endl;
+    cout << "║    broadcast_node<T>       - Send to all              ║" << endl;
+    cout << "║    sequencer_node<T>       - Enforce ordering         ║" << endl;
+    cout << "║                                                        ║" << endl;
+    cout << "╠════════════════════════════════════════════════════════╣" << endl;
+    cout << "║               CONCURRENCY CONTROL                      ║" << endl;
+    cout << "╠════════════════════════════════════════════════════════╣" << endl;
+    cout << "║                                                        ║" << endl;
+    cout << "║  unlimited:  Multiple messages processed concurrently ║" << endl;
+    cout << "║  serial:     One message at a time (ordered)          ║" << endl;
+    cout << "║  N:          Max N messages concurrently              ║" << endl;
+    cout << "║                                                        ║" << endl;
+    cout << "╚════════════════════════════════════════════════════════╝" << endl;
+    
+    return 0;
+}

@@ -1,0 +1,81 @@
+/*
+ * TBB FLOW_GRAPH BROADCAST - One-to-Many Communication
+ */
+
+#include <iostream>
+#include <cmath>
+#include <tbb/flow_graph.h>
+
+using namespace std;
+using namespace tbb;
+using namespace tbb::flow;
+
+void example1_basic() {
+    cout << "\n=== Example 1: Basic Broadcast ===" << endl;
+    
+    graph g;
+    
+    broadcast_node<int> bc(g);
+    
+    function_node<int, void> c1(g, unlimited,
+        [](int x) { cout << "  Consumer 1: " << x << endl; });
+    
+    function_node<int, void> c2(g, unlimited,
+        [](int x) { cout << "  Consumer 2: " << x << endl; });
+    
+    function_node<int, void> c3(g, unlimited,
+        [](int x) { cout << "  Consumer 3: " << x << endl; });
+    
+    make_edge(bc, c1);
+    make_edge(bc, c2);
+    make_edge(bc, c3);
+    
+    bc.try_put(42);
+    g.wait_for_all();
+}
+
+void example2_fanout() {
+    cout << "\n=== Example 2: Fan-Out Pattern ===" << endl;
+    
+    graph g;
+    
+    function_node<int, int> source(g, unlimited,
+        [](int x) {
+            cout << "  Source: " << x << endl;
+            return x * 2;
+        });
+    
+    broadcast_node<int> fanout(g);
+    
+    function_node<int, void> square(g, unlimited,
+        [](int x) { cout << "  Square: " << x*x << endl; });
+    
+    function_node<int, void> cube(g, unlimited,
+        [](int x) { cout << "  Cube: " << x*x*x << endl; });
+    
+    make_edge(source, fanout);
+    make_edge(fanout, square);
+    make_edge(fanout, cube);
+    
+    source.try_put(5);
+    g.wait_for_all();
+}
+
+int main() {
+    cout << "╔════════════════════════════════════════════════════════╗" << endl;
+    cout << "║  TBB flow_graph_broadcast - Complete Tutorial         ║" << endl;
+    cout << "╚════════════════════════════════════════════════════════╝" << endl;
+    
+    example1_basic();
+    example2_fanout();
+    
+    cout << "\n╔════════════════════════════════════════════════════════╗" << endl;
+    cout << "║                    KEY TAKEAWAYS                       ║" << endl;
+    cout << "╠════════════════════════════════════════════════════════╣" << endl;
+    cout << "║  1. Sends message to all connected successors          ║" << endl;
+    cout << "║  2. One-to-many communication                          ║" << endl;
+    cout << "║  3. Perfect for fan-out patterns                       ║" << endl;
+    cout << "╚════════════════════════════════════════════════════════╝" << endl;
+    
+    return 0;
+}

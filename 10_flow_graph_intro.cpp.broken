@@ -1,0 +1,430 @@
+/*
+ * TBB FLOW_GRAPH - Introduction to Dataflow Programming
+ * 
+ * DEFINITION:
+ * Flow graph is a powerful TBB feature that enables dataflow programming,
+ * where computation is expressed as a directed graph of nodes.
+ * 
+ * KEY CONCEPTS:
+ * - Nodes: Units of computation or data buffering
+ * - Edges: Data flow connections between nodes
+ * - Messages: Data passed between nodes
+ * - Graph: Container for nodes and execution
+ * 
+ * NODE TYPES:
+ * - function_node: Applies function to input
+ * - continue_node: Triggered by signal
+ * - broadcast_node: Forwards message to all successors
+ * - buffer_node: Stores messages
+ * - join_node: Combines multiple inputs
+ * - split_node: Splits tuple into separate outputs
+ * 
+ * WHEN TO USE:
+ * - Complex dataflow pipelines
+ * - Event-driven processing
+ * - Stream processing
+ * - Dependency-based execution
+ * - Reactive programming
+ * 
+ * BENEFITS:
+ * + Explicit dependencies
+ * + Automatic parallelism
+ * + Clear data flow
+ * + Composable patterns
+ */
+
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <string>
+#include <chrono>
+#include <thread>
+#include <tbb/flow_graph.h>
+
+using namespace std;
+using namespace tbb;
+using namespace tbb::flow;
+using namespace chrono;
+
+// ============= Example 1: Basic Flow Graph =============
+
+void example1_basic() {
+    cout << "\n=== Example 1: Basic Flow Graph ===" << endl;
+    
+    graph g;
+    
+    // Create a simple node that squares numbers
+    function_node<int, int> square(g, unlimited,
+        [](int x) {
+            cout << "  Squaring " << x << " -> " << x*x << endl;
+            return x * x;
+        });
+    
+    // Create a node that prints results
+    function_node<int, void> printer(g, unlimited,
+        [](int x) {
+            cout << "  Result: " << x << endl;
+        });
+    
+    // Connect nodes
+    make_edge(square, printer);
+    
+    // Send messages
+    cout << "Sending messages: 1, 2, 3, 4, 5" << endl;
+    for(int i = 1; i <= 5; ++i) {
+        square.try_put(i);
+    }
+    
+    // Wait for all processing to complete
+    g.wait_for_all();
+    cout << "All messages processed" << endl;
+}
+
+// ============= Example 2: Multi-Stage Pipeline =============
+
+void example2_pipeline() {
+    cout << "\n=== Example 2: Multi-Stage Pipeline ===" << endl;
+    
+    graph g;
+    
+    // Stage 1: Generate data
+    function_node<int, int> generator(g, unlimited,
+        [](int x) {
+            cout << "  Gen: " << x << endl;
+            return x;
+        });
+    
+    // Stage 2: Transform (square)
+    function_node<int, int> transform(g, unlimited,
+        [](int x) {
+            int result = x * x;
+            cout << "  Transform: " << x << " -> " << result << endl;
+            return result;
+        });
+    
+    // Stage 3: Filter (only even)
+    function_node<int, int> filter(g, unlimited,
+        [](int x) -> int {
+            if(x % 2 == 0) {
+                cout << "  Filter: " << x << " (passed)" << endl;
+                return x;
+            }
+            cout << "  Filter: " << x << " (rejected)" << endl;
+            return -1;
+        });
+    
+    // Stage 4: Output
+    function_node<int, void> output(g, unlimited,
+        [](int x) {
+            if(x != -1) {
+                cout << "  OUTPUT: " << x << endl;
+            }
+        });
+    
+    // Connect pipeline
+    make_edge(generator, transform);
+    make_edge(transform, filter);
+    make_edge(filter, output);
+    
+    // Send data through pipeline
+    for(int i = 1; i <= 10; ++i) {
+        generator.try_put(i);
+    }
+    
+    g.wait_for_all();
+}
+
+// ============= Example 3: Broadcast Node =============
+
+void example3_broadcast() {
+    cout << "\n=== Example 3: Broadcast Node ===" << endl;
+    
+    graph g;
+    
+    // Broadcast node sends to all connected nodes
+    broadcast_node<int> broadcaster(g);
+    
+    // Multiple consumers
+    function_node<int, void> consumer1(g, unlimited,
+        [](int x) { cout << "  Consumer1 received: " << x << endl; });
+    
+    function_node<int, void> consumer2(g, unlimited,
+        [](int x) { cout << "  Consumer2 received: " << x << endl; });
+    
+    function_node<int, void> consumer3(g, unlimited,
+        [](int x) { cout << "  Consumer3 received: " << x << endl; });
+    
+    // Connect broadcaster to all consumers
+    make_edge(broadcaster, consumer1);
+    make_edge(broadcaster, consumer2);
+    make_edge(broadcaster, consumer3);
+    
+    // Send message (goes to all consumers)
+    cout << "Broadcasting value 42:" << endl;
+    broadcaster.try_put(42);
+    
+    g.wait_for_all();
+    cout << "All consumers received the message" << endl;
+}
+
+// ============= Example 4: Buffer Node =============
+
+void example4_buffer() {
+    cout << "\n=== Example 4: Buffer Node ===" << endl;
+    
+    graph g;
+    
+    // Buffer stores messages
+    buffer_node<int> buffer(g);
+    
+    // Producer sends to buffer
+    function_node<int, int> producer(g, unlimited,
+        [](int x) {
+            cout << "  Produced: " << x << endl;
+            return x;
+        });
+    
+    // Consumer reads from buffer
+    function_node<int, void> consumer(g, serial,
+        [](int x) {
+            cout << "  Consumed: " << x << endl;
+            this_thread::sleep_for(milliseconds(100));
+        });
+    
+    make_edge(producer, buffer);
+    make_edge(buffer, consumer);
+    
+    // Send multiple items quickly
+    for(int i = 1; i <= 5; ++i) {
+        producer.try_put(i);
+    }
+    
+    g.wait_for_all();
+    cout << "Buffer decouples producer and consumer rates" << endl;
+}
+
+// ============= Example 5: Join Node =============
+
+void example5_join() {
+    cout << "\n=== Example 5: Join Node ===" << endl;
+    
+    graph g;
+    
+    // Two sources
+    function_node<int, int> source1(g, unlimited,
+        [](int x) {
+            cout << "  Source1: " << x << endl;
+            return x * 2;
+        });
+    
+    function_node<int, int> source2(g, unlimited,
+        [](int x) {
+            cout << "  Source2: " << x << endl;
+            return x * 3;
+        });
+    
+    // Join node waits for input from both sources
+    typedef tuple<int, int> two_ints;
+    join_node<two_ints> joiner(g);
+    
+    // Processor receives joined data
+    function_node<two_ints, void> processor(g, unlimited,
+        [](two_ints t) {
+            cout << "  Joined: (" << get<0>(t) << ", " << get<1>(t) << ")" << endl;
+            cout << "  Sum: " << (get<0>(t) + get<1>(t)) << endl;
+        });
+    
+    // Connect
+    make_edge(source1, input_port<0>(joiner));
+    make_edge(source2, input_port<1>(joiner));
+    make_edge(joiner, processor);
+    
+    // Send to both sources
+    source1.try_put(5);
+    source2.try_put(5);
+    
+    g.wait_for_all();
+}
+
+// ============= Example 6: Parallel Image Processing Pipeline =============
+
+struct Image {
+    int id;
+    vector<int> pixels;
+    
+    Image() : id(0) {}
+    Image(int i, int size) : id(i), pixels(size, 0) {}
+};
+
+void example6_image_pipeline() {
+    cout << "\n=== Example 6: Image Processing Pipeline ===" << endl;
+    
+    graph g;
+    
+    // Stage 1: Load image
+    function_node<int, Image*> loader(g, unlimited,
+        [](int id) -> Image* {
+            cout << "  Loading image " << id << endl;
+            return new Image(id, 1000);
+        });
+    
+    // Stage 2: Apply filter (can run in parallel)
+    function_node<Image*, Image*> filter(g, unlimited,
+        [](Image* img) -> Image* {
+            cout << "  Filtering image " << img->id << endl;
+            for(int& pixel : img->pixels) {
+                pixel = pixel * 2 + 1;
+            }
+            return img;
+        });
+    
+    // Stage 3: Compress (can run in parallel)
+    function_node<Image*, Image*> compressor(g, unlimited,
+        [](Image* img) -> Image* {
+            cout << "  Compressing image " << img->id << endl;
+            // Simulate compression
+            return img;
+        });
+    
+    // Stage 4: Save (must be serial to maintain order)
+    function_node<Image*, void> saver(g, serial,
+        [](Image* img) {
+            cout << "  Saved image " << img->id << endl;
+            delete img;
+        });
+    
+    // Connect pipeline
+    make_edge(loader, filter);
+    make_edge(filter, compressor);
+    make_edge(compressor, saver);
+    
+    // Process 5 images
+    for(int i = 0; i < 5; ++i) {
+        loader.try_put(i);
+    }
+    
+    g.wait_for_all();
+    cout << "Pipeline processed 5 images" << endl;
+}
+
+// ============= Example 7: Dependency Graph =============
+
+void example7_dependencies() {
+    cout << "\n=== Example 7: Task Dependencies ===" << endl;
+    
+    graph g;
+    
+    // Task A: Initial task
+    continue_node<continue_msg> taskA(g,
+        [](const continue_msg&) {
+            cout << "  Task A executing" << endl;
+            this_thread::sleep_for(milliseconds(50));
+        });
+    
+    // Task B: Depends on A
+    continue_node<continue_msg> taskB(g,
+        [](const continue_msg&) {
+            cout << "  Task B executing (after A)" << endl;
+            this_thread::sleep_for(milliseconds(50));
+        });
+    
+    // Task C: Depends on A
+    continue_node<continue_msg> taskC(g,
+        [](const continue_msg&) {
+            cout << "  Task C executing (after A)" << endl;
+            this_thread::sleep_for(milliseconds(50));
+        });
+    
+    // Task D: Depends on both B and C
+    join_node<tuple<continue_msg, continue_msg>> join(g);
+    continue_node<tuple<continue_msg, continue_msg>> taskD(g,
+        [](const tuple<continue_msg, continue_msg>&) {
+            cout << "  Task D executing (after B and C)" << endl;
+        });
+    
+    // Build dependency graph
+    make_edge(taskA, taskB);
+    make_edge(taskA, taskC);
+    make_edge(taskB, input_port<0>(join));
+    make_edge(taskC, input_port<1>(join));
+    make_edge(join, taskD);
+    
+    // Start execution
+    cout << "Dependency: D depends on (B and C), B and C depend on A" << endl;
+    taskA.try_put(continue_msg());
+    
+    g.wait_for_all();
+    cout << "All tasks completed in dependency order" << endl;
+}
+
+int main() {
+    cout << "╔════════════════════════════════════════════════════════╗" << endl;
+    cout << "║    TBB flow_graph - Complete Tutorial                 ║" << endl;
+    cout << "╚════════════════════════════════════════════════════════╝" << endl;
+    
+    example1_basic();
+    example2_pipeline();
+    example3_broadcast();
+    example4_buffer();
+    example5_join();
+    example6_image_pipeline();
+    example7_dependencies();
+    
+    cout << "\n╔════════════════════════════════════════════════════════╗" << endl;
+    cout << "║                    KEY TAKEAWAYS                       ║" << endl;
+    cout << "╠════════════════════════════════════════════════════════╣" << endl;
+    cout << "║                                                        ║" << endl;
+    cout << "║  1. Flow graph enables dataflow programming           ║" << endl;
+    cout << "║  2. Nodes represent computation or buffering          ║" << endl;
+    cout << "║  3. Edges define data flow between nodes              ║" << endl;
+    cout << "║  4. function_node applies functions to messages       ║" << endl;
+    cout << "║  5. broadcast_node sends to all successors            ║" << endl;
+    cout << "║  6. join_node waits for multiple inputs               ║" << endl;
+    cout << "║  7. Automatic parallelism based on dependencies       ║" << endl;
+    cout << "║  8. Great for complex pipelines and workflows         ║" << endl;
+    cout << "║                                                        ║" << endl;
+    cout << "╠════════════════════════════════════════════════════════╣" << endl;
+    cout << "║               COMMON PATTERNS                          ║" << endl;
+    cout << "╠════════════════════════════════════════════════════════╣" << endl;
+    cout << "║                                                        ║" << endl;
+    cout << "║  Simple Pipeline:                                      ║" << endl;
+    cout << "║    function_node<In, Out> stage1(g, unlimited, f1);   ║" << endl;
+    cout << "║    function_node<Out, Result> stage2(g, unlimited, f2);║" << endl;
+    cout << "║    make_edge(stage1, stage2);                         ║" << endl;
+    cout << "║    stage1.try_put(input);                             ║" << endl;
+    cout << "║                                                        ║" << endl;
+    cout << "║  Broadcast:                                            ║" << endl;
+    cout << "║    broadcast_node<T> bc(g);                           ║" << endl;
+    cout << "║    make_edge(bc, node1);                              ║" << endl;
+    cout << "║    make_edge(bc, node2);                              ║" << endl;
+    cout << "║                                                        ║" << endl;
+    cout << "║  Join:                                                 ║" << endl;
+    cout << "║    join_node<tuple<T1, T2>> j(g);                     ║" << endl;
+    cout << "║    make_edge(source1, input_port<0>(j));              ║" << endl;
+    cout << "║    make_edge(source2, input_port<1>(j));              ║" << endl;
+    cout << "║                                                        ║" << endl;
+    cout << "╠════════════════════════════════════════════════════════╣" << endl;
+    cout << "║               NODE CONCURRENCY                         ║" << endl;
+    cout << "╠════════════════════════════════════════════════════════╣" << endl;
+    cout << "║                                                        ║" << endl;
+    cout << "║  unlimited: Multiple messages processed concurrently  ║" << endl;
+    cout << "║  serial:    One message at a time (ordered)           ║" << endl;
+    cout << "║  N:         Max N messages concurrently               ║" << endl;
+    cout << "║                                                        ║" << endl;
+    cout << "╠════════════════════════════════════════════════════════╣" << endl;
+    cout << "║               WHEN TO USE                              ║" << endl;
+    cout << "╠════════════════════════════════════════════════════════╣" << endl;
+    cout << "║                                                        ║" << endl;
+    cout << "║  ✓ Complex data processing pipelines                  ║" << endl;
+    cout << "║  ✓ Event-driven systems                               ║" << endl;
+    cout << "║  ✓ Stream processing                                  ║" << endl;
+    cout << "║  ✓ Workflow engines                                   ║" << endl;
+    cout << "║  ✓ Reactive programming                               ║" << endl;
+    cout << "║  ✓ Dependencies between tasks                         ║" << endl;
+    cout << "║  ✗ Simple loops (use parallel_for)                    ║" << endl;
+    cout << "║  ✗ Simple reductions (use parallel_reduce)            ║" << endl;
+    cout << "║                                                        ║" << endl;
+    cout << "╚════════════════════════════════════════════════════════╝" << endl;
+    
+    return 0;
+}
