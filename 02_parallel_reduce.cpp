@@ -318,7 +318,7 @@ void example7_histogram() {
 
 int main() {
     cout << "╔════════════════════════════════════════════════════════╗" << endl;
-    cout << "║      TBB parallel_reduce - Complete Tutorial          ║" << endl;
+    cout << "║      TBB parallel_reduce - Complete Tutorial           ║" << endl;
     cout << "╚════════════════════════════════════════════════════════╝" << endl;
     
     example1_simple_sum();
@@ -329,17 +329,18 @@ int main() {
     example6_deterministic();
     example7_histogram();
     
-    cout << "\n╔════════════════════════════════════════════════════════╗" << endl;
+    cout << "\n";
+    cout << "╔════════════════════════════════════════════════════════╗" << endl;
     cout << "║                    KEY TAKEAWAYS                       ║" << endl;
     cout << "╠════════════════════════════════════════════════════════╣" << endl;
     cout << "║                                                        ║" << endl;
-    cout << "║  1. parallel_reduce is for aggregation operations     ║" << endl;
-    cout << "║  2. Requires identity value and join operation        ║" << endl;
-    cout << "║  3. Operation must be associative                     ║" << endl;
-    cout << "║  4. Great for sum, product, min, max, custom ops      ║" << endl;
-    cout << "║  5. Can return complex types (structs, vectors)       ║" << endl;
-    cout << "║  6. Use deterministic version for reproducibility     ║" << endl;
-    cout << "║  7. Much faster than sequential for large data        ║" << endl;
+    cout << "║  1. parallel_reduce is for aggregation operations      ║" << endl;
+    cout << "║  2. Requires identity value and join operation         ║" << endl;
+    cout << "║  3. Operation must be associative                      ║" << endl;
+    cout << "║  4. Great for sum, product, min, max, custom ops       ║" << endl;
+    cout << "║  5. Can return complex types (structs, vectors)        ║" << endl;
+    cout << "║  6. Use deterministic version for reproducibility      ║" << endl;
+    cout << "║  7. Much faster than sequential for large data         ║" << endl;
     cout << "║                                                        ║" << endl;
     cout << "╚════════════════════════════════════════════════════════╝" << endl;
     
