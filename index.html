@@ -103,6 +103,15 @@
     --nav-doc-active-bg: var(--accent);
     --nav-doc-active-fg: #0a0f17;
     --scrollbar-thumb: #2a2e40;
+
+    /* Diagram (```diagram) box accent palette */
+    --d-blue: #5aa2f0;
+    --d-green: #56c98a;
+    --d-orange: #e0a23c;
+    --d-red: #e8666f;
+    --d-purple: #b58cf0;
+    --d-teal: #45c4c4;
+    --d-gray: #9aa0b4;
 }
 
 [data-theme="light"] {
@@ -177,6 +186,15 @@
     --nav-doc-active-bg: var(--accent);
     --nav-doc-active-fg: #ffffff;
     --scrollbar-thumb: #d0d4e2;
+
+    /* Diagram (```diagram) box accent palette (darker for light bg contrast) */
+    --d-blue: #1f6fc4;
+    --d-green: #2f8f52;
+    --d-orange: #c1771f;
+    --d-red: #d23f4a;
+    --d-purple: #7d4fd0;
+    --d-teal: #1f8a8a;
+    --d-gray: #6a7187;
 }
 
 /* === Reset & base === */
@@ -1071,6 +1089,71 @@ body.nav-condensed .nav-doc-title {
 .callout-warning .callout-title { color: var(--text-heading-h2); }
 .callout-caution   { border-left-color: #e0555f; }
 .callout-caution .callout-title { color: #e0555f; }
+
+/* === Diagrams (```diagram blocks, rendered to nested boxes at build time) === */
+.diagram {
+    margin: 22px 0;
+    padding: 24px 24px 28px;
+    border: 1px solid var(--border-main);
+    border-radius: var(--radius-lg, 16px);
+    background: linear-gradient(180deg, rgba(127,127,127,0.04), transparent);
+}
+.diagram-title {
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+}
+/* A titled box. Title sits on the top border like a fieldset legend. */
+.dbox {
+    position: relative;
+    border: 1.5px solid var(--dbox-color, var(--border-main));
+    border-radius: 13px;
+    padding: 20px 20px 18px;
+    margin-top: 22px;
+    background: var(--dbox-fill, rgba(127,127,127,0.03));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), var(--shadow-md);
+}
+.dbox:first-child { margin-top: 4px; }
+.dbox > .dbox-title {
+    position: absolute;
+    top: -9px;
+    left: 18px;
+    padding: 1px 10px;
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--dbox-color, var(--text-primary));
+    background: var(--bg-content);
+}
+.dbox.dashed { border-style: dashed; }
+.dtext {
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.55;
+    margin: 8px 0;
+}
+.dtext:first-of-type { margin-top: 4px; }
+.dtext:last-child { margin-bottom: 0; }
+.dtext b { color: var(--text-primary); font-weight: 700; }
+.dtext code, .dbox-title code {
+    font-family: var(--font-mono);
+    font-size: 0.92em;
+    background: var(--bg-code-inline);
+    padding: 1px 5px;
+    border-radius: 5px;
+}
+/* color variants drive both border + legend via a single custom property */
+.dbox.blue   { --dbox-color: var(--d-blue);   --dbox-fill: color-mix(in srgb, var(--d-blue) 7%, transparent); }
+.dbox.green  { --dbox-color: var(--d-green);  --dbox-fill: color-mix(in srgb, var(--d-green) 7%, transparent); }
+.dbox.orange { --dbox-color: var(--d-orange); --dbox-fill: color-mix(in srgb, var(--d-orange) 7%, transparent); }
+.dbox.red    { --dbox-color: var(--d-red);    --dbox-fill: color-mix(in srgb, var(--d-red) 7%, transparent); }
+.dbox.purple { --dbox-color: var(--d-purple); --dbox-fill: color-mix(in srgb, var(--d-purple) 7%, transparent); }
+.dbox.teal   { --dbox-color: var(--d-teal);   --dbox-fill: color-mix(in srgb, var(--d-teal) 7%, transparent); }
+.dbox.gray   { --dbox-color: var(--d-gray);   --dbox-fill: color-mix(in srgb, var(--d-gray) 7%, transparent); }
 
 /* === Visible keyboard focus rings === */
 /* Keyboard focus ring. Do NOT set border-radius here -- modern browsers round
@@ -2027,7 +2110,7 @@ cat COMPLETE_TBB_GUIDE.md
 <hr />
 <p><strong>Happy Parallel Programming!</strong> 🎉</p>
 <p><em>Note: TBB version used in examples: oneTBB (open-source version)</em></p>` },
-  { name: `2. Parallel For`, path: `01_parallel_for.cpp`, dir: ``, words: 1678, mins: 8, body: `<h1 id="01_parallel_forcpp">01_parallel_for.cpp</h1>
+  { name: `2. Parallel For`, path: `01_parallel_for.cpp`, dir: ``, words: 1682, mins: 8, body: `<h1 id="01_parallel_forcpp">01_parallel_for.cpp</h1>
 <pre><code class="language-cpp">/*
  * TBB PARALLEL_FOR - The Foundation of Parallel Loops
  * 
@@ -2328,7 +2411,7 @@ void example7_monte_carlo() {
 
 int main() {
     cout &lt;&lt; &quot;╔════════════════════════════════════════════════════════╗&quot; &lt;&lt; endl;
-    cout &lt;&lt; &quot;║       TBB parallel_for - Complete Tutorial            ║&quot; &lt;&lt; endl;
+    cout &lt;&lt; &quot;║       TBB parallel_for - Complete Tutorial             ║&quot; &lt;&lt; endl;
     cout &lt;&lt; &quot;╚════════════════════════════════════════════════════════╝&quot; &lt;&lt; endl;
 
     cout &lt;&lt; &quot;\\nTBB Version: &quot; &lt;&lt; TBB_VERSION_MAJOR &lt;&lt; &quot;.&quot; &lt;&lt; TBB_VERSION_MINOR &lt;&lt; endl;
@@ -2342,44 +2425,45 @@ int main() {
     example6_partitioners();
     example7_monte_carlo();
 
-    cout &lt;&lt; &quot;\\n╔════════════════════════════════════════════════════════╗&quot; &lt;&lt; endl;
+    cout &lt;&lt; &quot;\\n&quot;;
+    cout &lt;&lt; &quot;╔════════════════════════════════════════════════════════╗&quot; &lt;&lt; endl;
     cout &lt;&lt; &quot;║                    KEY TAKEAWAYS                       ║&quot; &lt;&lt; endl;
     cout &lt;&lt; &quot;╠════════════════════════════════════════════════════════╣&quot; &lt;&lt; endl;
     cout &lt;&lt; &quot;║                                                        ║&quot; &lt;&lt; endl;
-    cout &lt;&lt; &quot;║  1. parallel_for is for independent loop iterations   ║&quot; &lt;&lt; endl;
-    cout &lt;&lt; &quot;║  2. Use blocked_range to define iteration space       ║&quot; &lt;&lt; endl;
-    cout &lt;&lt; &quot;║  3. Grain size controls parallelism vs overhead       ║&quot; &lt;&lt; endl;
-    cout &lt;&lt; &quot;║  4. auto_partitioner is best for most cases           ║&quot; &lt;&lt; endl;
+    cout &lt;&lt; &quot;║  1. parallel_for is for independent loop iterations    ║&quot; &lt;&lt; endl;
+    cout &lt;&lt; &quot;║  2. Use blocked_range to define iteration space        ║&quot; &lt;&lt; endl;
+    cout &lt;&lt; &quot;║  3. Grain size controls parallelism vs overhead        ║&quot; &lt;&lt; endl;
+    cout &lt;&lt; &quot;║  4. auto_partitioner is best for most cases            ║&quot; &lt;&lt; endl;
     cout &lt;&lt; &quot;║  5. 2D ranges available via blocked_range2d            ║&quot; &lt;&lt; endl;
-    cout &lt;&lt; &quot;║  6. Lambda syntax is clean and convenient             ║&quot; &lt;&lt; endl;
-    cout &lt;&lt; &quot;║  7. Function objects give more control                ║&quot; &lt;&lt; endl;
-    cout &lt;&lt; &quot;║  8. Ensure enough work per task (&gt;10μs)               ║&quot; &lt;&lt; endl;
+    cout &lt;&lt; &quot;║  6. Lambda syntax is clean and convenient              ║&quot; &lt;&lt; endl;
+    cout &lt;&lt; &quot;║  7. Function objects give more control                 ║&quot; &lt;&lt; endl;
+    cout &lt;&lt; &quot;║  8. Ensure enough work per task (&gt;10μs)                ║&quot; &lt;&lt; endl;
     cout &lt;&lt; &quot;║                                                        ║&quot; &lt;&lt; endl;
     cout &lt;&lt; &quot;╠════════════════════════════════════════════════════════╣&quot; &lt;&lt; endl;
     cout &lt;&lt; &quot;║               COMMON PATTERNS                          ║&quot; &lt;&lt; endl;
     cout &lt;&lt; &quot;╠════════════════════════════════════════════════════════╣&quot; &lt;&lt; endl;
     cout &lt;&lt; &quot;║                                                        ║&quot; &lt;&lt; endl;
     cout &lt;&lt; &quot;║  Array Processing:                                     ║&quot; &lt;&lt; endl;
-    cout &lt;&lt; &quot;║    parallel_for(blocked_range&lt;int&gt;(0, N),             ║&quot; &lt;&lt; endl;
-    cout &lt;&lt; &quot;║      [&amp;](auto r) { for(int i : r) process(arr[i]); })║&quot; &lt;&lt; endl;
+    cout &lt;&lt; &quot;║    parallel_for(blocked_range&lt;int&gt;(0, N),              ║&quot; &lt;&lt; endl;
+    cout &lt;&lt; &quot;║      [&amp;](auto r) { for(int i : r) process(arr[i]); })  ║&quot; &lt;&lt; endl;
     cout &lt;&lt; &quot;║                                                        ║&quot; &lt;&lt; endl;
     cout &lt;&lt; &quot;║  Image Processing:                                     ║&quot; &lt;&lt; endl;
-    cout &lt;&lt; &quot;║    parallel_for(blocked_range2d&lt;int&gt;(0, H, 0, W),     ║&quot; &lt;&lt; endl;
-    cout &lt;&lt; &quot;║      [&amp;](auto r) { /* process pixels */ });           ║&quot; &lt;&lt; endl;
+    cout &lt;&lt; &quot;║    parallel_for(blocked_range2d&lt;int&gt;(0, H, 0, W),      ║&quot; &lt;&lt; endl;
+    cout &lt;&lt; &quot;║      [&amp;](auto r) { /* process pixels */ });            ║&quot; &lt;&lt; endl;
     cout &lt;&lt; &quot;║                                                        ║&quot; &lt;&lt; endl;
     cout &lt;&lt; &quot;║  Simple Range:                                         ║&quot; &lt;&lt; endl;
-    cout &lt;&lt; &quot;║    parallel_for(0, N, [&amp;](int i) { work(i); });       ║&quot; &lt;&lt; endl;
+    cout &lt;&lt; &quot;║    parallel_for(0, N, [&amp;](int i) { work(i); });        ║&quot; &lt;&lt; endl;
     cout &lt;&lt; &quot;║                                                        ║&quot; &lt;&lt; endl;
     cout &lt;&lt; &quot;╠════════════════════════════════════════════════════════╣&quot; &lt;&lt; endl;
     cout &lt;&lt; &quot;║               PERFORMANCE TIPS                         ║&quot; &lt;&lt; endl;
     cout &lt;&lt; &quot;╠════════════════════════════════════════════════════════╣&quot; &lt;&lt; endl;
     cout &lt;&lt; &quot;║                                                        ║&quot; &lt;&lt; endl;
-    cout &lt;&lt; &quot;║  ✓ Make grain size large enough (10-100μs)            ║&quot; &lt;&lt; endl;
-    cout &lt;&lt; &quot;║  ✓ Avoid shared mutable state                         ║&quot; &lt;&lt; endl;
-    cout &lt;&lt; &quot;║  ✓ Use local variables in loop body                   ║&quot; &lt;&lt; endl;
-    cout &lt;&lt; &quot;║  ✓ Minimize synchronization                           ║&quot; &lt;&lt; endl;
-    cout &lt;&lt; &quot;║  ✓ Let TBB handle thread count                        ║&quot; &lt;&lt; endl;
-    cout &lt;&lt; &quot;║  ✓ Profile to find optimal grain size                 ║&quot; &lt;&lt; endl;
+    cout &lt;&lt; &quot;║  ✓ Make grain size large enough (10-100μs)             ║&quot; &lt;&lt; endl;
+    cout &lt;&lt; &quot;║  ✓ Avoid shared mutable state                          ║&quot; &lt;&lt; endl;
+    cout &lt;&lt; &quot;║  ✓ Use local variables in loop body                    ║&quot; &lt;&lt; endl;
+    cout &lt;&lt; &quot;║  ✓ Minimize synchronization                            ║&quot; &lt;&lt; endl;
+    cout &lt;&lt; &quot;║  ✓ Let TBB handle thread count                         ║&quot; &lt;&lt; endl;
+    cout &lt;&lt; &quot;║  ✓ Profile to find optimal grain size                  ║&quot; &lt;&lt; endl;
     cout &lt;&lt; &quot;║                                                        ║&quot; &lt;&lt; endl;
     cout &lt;&lt; &quot;╚════════════════════════════════════════════════════════╝&quot; &lt;&lt; endl;
 
@@ -13112,13 +13196,11 @@ function updateScrollSpy() {
         }
         currentTocHeadings.forEach(e => e.link.classList.remove('nav-active'));
         if (activeEntry) {
+            // Only update the highlight. Do NOT programmatically scroll either
+            // sidebar -- they should stay put and move only when the user
+            // scrolls them. (The previous code scrolled the wrong sidebar, the
+            // left document list, which made it jump to the top on every click.)
             activeEntry.link.classList.add('nav-active');
-            const linkTop = activeEntry.link.offsetTop;
-            const navH = sidebarNav.clientHeight;
-            const navScroll = sidebarNav.scrollTop;
-            if (linkTop < navScroll + 40 || linkTop > navScroll + navH - 40) {
-                sidebarNav.scrollTo({ top: linkTop - navH / 3, behavior: 'smooth' });
-            }
         }
     });
 }
