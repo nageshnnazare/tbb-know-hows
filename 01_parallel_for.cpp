@@ -298,7 +298,7 @@ void example7_monte_carlo() {
 
 int main() {
     cout << "╔════════════════════════════════════════════════════════╗" << endl;
-    cout << "║       TBB parallel_for - Complete Tutorial            ║" << endl;
+    cout << "║       TBB parallel_for - Complete Tutorial             ║" << endl;
     cout << "╚════════════════════════════════════════════════════════╝" << endl;
     
     cout << "\nTBB Version: " << TBB_VERSION_MAJOR << "." << TBB_VERSION_MINOR << endl;
@@ -312,44 +312,45 @@ int main() {
     example6_partitioners();
     example7_monte_carlo();
     
-    cout << "\n╔════════════════════════════════════════════════════════╗" << endl;
+    cout << "\n";
+    cout << "╔════════════════════════════════════════════════════════╗" << endl;
     cout << "║                    KEY TAKEAWAYS                       ║" << endl;
     cout << "╠════════════════════════════════════════════════════════╣" << endl;
     cout << "║                                                        ║" << endl;
-    cout << "║  1. parallel_for is for independent loop iterations   ║" << endl;
-    cout << "║  2. Use blocked_range to define iteration space       ║" << endl;
-    cout << "║  3. Grain size controls parallelism vs overhead       ║" << endl;
-    cout << "║  4. auto_partitioner is best for most cases           ║" << endl;
+    cout << "║  1. parallel_for is for independent loop iterations    ║" << endl;
+    cout << "║  2. Use blocked_range to define iteration space        ║" << endl;
+    cout << "║  3. Grain size controls parallelism vs overhead        ║" << endl;
+    cout << "║  4. auto_partitioner is best for most cases            ║" << endl;
     cout << "║  5. 2D ranges available via blocked_range2d            ║" << endl;
-    cout << "║  6. Lambda syntax is clean and convenient             ║" << endl;
-    cout << "║  7. Function objects give more control                ║" << endl;
-    cout << "║  8. Ensure enough work per task (>10μs)               ║" << endl;
+    cout << "║  6. Lambda syntax is clean and convenient              ║" << endl;
+    cout << "║  7. Function objects give more control                 ║" << endl;
+    cout << "║  8. Ensure enough work per task (>10μs)                ║" << endl;
     cout << "║                                                        ║" << endl;
     cout << "╠════════════════════════════════════════════════════════╣" << endl;
     cout << "║               COMMON PATTERNS                          ║" << endl;
     cout << "╠════════════════════════════════════════════════════════╣" << endl;
     cout << "║                                                        ║" << endl;
     cout << "║  Array Processing:                                     ║" << endl;
-    cout << "║    parallel_for(blocked_range<int>(0, N),             ║" << endl;
-    cout << "║      [&](auto r) { for(int i : r) process(arr[i]); })║" << endl;
+    cout << "║    parallel_for(blocked_range<int>(0, N),              ║" << endl;
+    cout << "║      [&](auto r) { for(int i : r) process(arr[i]); })  ║" << endl;
     cout << "║                                                        ║" << endl;
     cout << "║  Image Processing:                                     ║" << endl;
-    cout << "║    parallel_for(blocked_range2d<int>(0, H, 0, W),     ║" << endl;
-    cout << "║      [&](auto r) { /* process pixels */ });           ║" << endl;
+    cout << "║    parallel_for(blocked_range2d<int>(0, H, 0, W),      ║" << endl;
+    cout << "║      [&](auto r) { /* process pixels */ });            ║" << endl;
     cout << "║                                                        ║" << endl;
     cout << "║  Simple Range:                                         ║" << endl;
-    cout << "║    parallel_for(0, N, [&](int i) { work(i); });       ║" << endl;
+    cout << "║    parallel_for(0, N, [&](int i) { work(i); });        ║" << endl;
     cout << "║                                                        ║" << endl;
     cout << "╠════════════════════════════════════════════════════════╣" << endl;
     cout << "║               PERFORMANCE TIPS                         ║" << endl;
     cout << "╠════════════════════════════════════════════════════════╣" << endl;
     cout << "║                                                        ║" << endl;
-    cout << "║  ✓ Make grain size large enough (10-100μs)            ║" << endl;
-    cout << "║  ✓ Avoid shared mutable state                         ║" << endl;
-    cout << "║  ✓ Use local variables in loop body                   ║" << endl;
-    cout << "║  ✓ Minimize synchronization                           ║" << endl;
-    cout << "║  ✓ Let TBB handle thread count                        ║" << endl;
-    cout << "║  ✓ Profile to find optimal grain size                 ║" << endl;
+    cout << "║  ✓ Make grain size large enough (10-100μs)             ║" << endl;
+    cout << "║  ✓ Avoid shared mutable state                          ║" << endl;
+    cout << "║  ✓ Use local variables in loop body                    ║" << endl;
+    cout << "║  ✓ Minimize synchronization                            ║" << endl;
+    cout << "║  ✓ Let TBB handle thread count                         ║" << endl;
+    cout << "║  ✓ Profile to find optimal grain size                  ║" << endl;
     cout << "║                                                        ║" << endl;
     cout << "╚════════════════════════════════════════════════════════╝" << endl;
     
