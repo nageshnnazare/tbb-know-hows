@@ -2472,7 +2472,7 @@ int main() {
 
 
 </code></pre>` },
-  { name: `3. Parallel Reduce`, path: `02_parallel_reduce.cpp`, dir: ``, words: 1490, mins: 7, body: `<h1 id="02_parallel_reducecpp">02_parallel_reduce.cpp</h1>
+  { name: `3. Parallel Reduce`, path: `02_parallel_reduce.cpp`, dir: ``, words: 1493, mins: 7, body: `<h1 id="02_parallel_reducecpp">02_parallel_reduce.cpp</h1>
 <pre><code class="language-cpp">/*
  * TBB PARALLEL_REDUCE - Parallel Aggregation and Reductions
  * 
@@ -2793,7 +2793,7 @@ void example7_histogram() {
 
 int main() {
     cout &lt;&lt; &quot;╔════════════════════════════════════════════════════════╗&quot; &lt;&lt; endl;
-    cout &lt;&lt; &quot;║      TBB parallel_reduce - Complete Tutorial          ║&quot; &lt;&lt; endl;
+    cout &lt;&lt; &quot;║      TBB parallel_reduce - Complete Tutorial           ║&quot; &lt;&lt; endl;
     cout &lt;&lt; &quot;╚════════════════════════════════════════════════════════╝&quot; &lt;&lt; endl;
 
     example1_simple_sum();
@@ -2804,17 +2804,18 @@ int main() {
     example6_deterministic();
     example7_histogram();
 
-    cout &lt;&lt; &quot;\\n╔════════════════════════════════════════════════════════╗&quot; &lt;&lt; endl;
+    cout &lt;&lt; &quot;\\n&quot;;
+    cout &lt;&lt; &quot;╔════════════════════════════════════════════════════════╗&quot; &lt;&lt; endl;
     cout &lt;&lt; &quot;║                    KEY TAKEAWAYS                       ║&quot; &lt;&lt; endl;
     cout &lt;&lt; &quot;╠════════════════════════════════════════════════════════╣&quot; &lt;&lt; endl;
     cout &lt;&lt; &quot;║                                                        ║&quot; &lt;&lt; endl;
-    cout &lt;&lt; &quot;║  1. parallel_reduce is for aggregation operations     ║&quot; &lt;&lt; endl;
-    cout &lt;&lt; &quot;║  2. Requires identity value and join operation        ║&quot; &lt;&lt; endl;
-    cout &lt;&lt; &quot;║  3. Operation must be associative                     ║&quot; &lt;&lt; endl;
-    cout &lt;&lt; &quot;║  4. Great for sum, product, min, max, custom ops      ║&quot; &lt;&lt; endl;
-    cout &lt;&lt; &quot;║  5. Can return complex types (structs, vectors)       ║&quot; &lt;&lt; endl;
-    cout &lt;&lt; &quot;║  6. Use deterministic version for reproducibility     ║&quot; &lt;&lt; endl;
-    cout &lt;&lt; &quot;║  7. Much faster than sequential for large data        ║&quot; &lt;&lt; endl;
+    cout &lt;&lt; &quot;║  1. parallel_reduce is for aggregation operations      ║&quot; &lt;&lt; endl;
+    cout &lt;&lt; &quot;║  2. Requires identity value and join operation         ║&quot; &lt;&lt; endl;
+    cout &lt;&lt; &quot;║  3. Operation must be associative                      ║&quot; &lt;&lt; endl;
+    cout &lt;&lt; &quot;║  4. Great for sum, product, min, max, custom ops       ║&quot; &lt;&lt; endl;
+    cout &lt;&lt; &quot;║  5. Can return complex types (structs, vectors)        ║&quot; &lt;&lt; endl;
+    cout &lt;&lt; &quot;║  6. Use deterministic version for reproducibility      ║&quot; &lt;&lt; endl;
+    cout &lt;&lt; &quot;║  7. Much faster than sequential for large data         ║&quot; &lt;&lt; endl;
     cout &lt;&lt; &quot;║                                                        ║&quot; &lt;&lt; endl;
     cout &lt;&lt; &quot;╚════════════════════════════════════════════════════════╝&quot; &lt;&lt; endl;
 
