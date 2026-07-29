@@ -1,382 +1,205 @@
-# Intel Threading Building Blocks (TBB) - Complete Guide
+# The Intel oneTBB Mastery Guide
 
-## 🎯 Overview
-
-Intel Threading Building Blocks (TBB) is a C++ template library for parallel programming that abstracts low-level threading details and provides high-level parallel constructs.
-
-### **Why TBB?**
-- ✅ High-level parallel programming (no manual thread management)
-- ✅ Task-based parallelism (better than thread-based)
-- ✅ Work-stealing scheduler (automatic load balancing)
-- ✅ Scalable concurrent containers
-- ✅ Cache-friendly memory allocators
-- ✅ Portable across platforms
-
----
-
-## 📚 Complete Coverage
-
-### **1. Parallel Algorithms** (6 examples)
-High-level algorithms that parallelize common operations automatically.
-
-- **01_parallel_for.cpp** - Parallel loops and ranges
-- **02_parallel_reduce.cpp** - Parallel reductions and aggregations
-- **03_parallel_scan.cpp** - Parallel prefix computations
-- **04_parallel_sort.cpp** - Parallel sorting algorithms
-- **05_parallel_invoke.cpp** - Execute multiple functions in parallel
-- **06_parallel_pipeline.cpp** - Pipeline parallelism for streaming data
-
-### **2. Task-Based Programming** (4 examples)
-Fine-grained control over parallel execution using tasks.
-
-- **07_task_groups.cpp** - Task groups and hierarchical parallelism
-- **08_task_arena.cpp** - Task arenas for controlling parallelism
-- **09_task_scheduler.cpp** - Task scheduler initialization and control
-- **10_continuation_tasks.cpp** - Task dependencies and continuations
-
-### **3. Concurrent Containers** (6 examples)
-Thread-safe containers for concurrent access without explicit locking.
-
-- **11_concurrent_vector.cpp** - Dynamic array with concurrent growth
-- **12_concurrent_queue.cpp** - Lock-free FIFO queue
-- **13_concurrent_hash_map.cpp** - Concurrent hash table
-- **14_concurrent_unordered_map.cpp** - Modern concurrent hash map
-- **15_concurrent_bounded_queue.cpp** - Bounded queue with blocking
-- **16_concurrent_priority_queue.cpp** - Thread-safe priority queue
-
-### **4. Synchronization Primitives** (5 examples)
-Low-level synchronization for shared data.
-
-- **17_mutex.cpp** - Mutual exclusion locks
-- **18_spin_mutex.cpp** - Spinlocks for short critical sections
-- **19_atomic.cpp** - Lock-free atomic operations
-- **20_reader_writer_lock.cpp** - Multiple readers, single writer
-- **21_queuing_mutex.cpp** - Fair mutex with FIFO ordering
-
-### **5. Memory Allocation** (3 examples)
-Scalable memory allocators for multithreaded applications.
-
-- **22_scalable_allocator.cpp** - TBB's scalable memory allocator
-- **23_cache_aligned_allocator.cpp** - Cache-line aligned allocation
-- **24_memory_pools.cpp** - Fixed-size memory pools
-
-### **6. Flow Graph** (5 examples)
-Data flow and dependency-based parallelism.
-
-- **25_flow_graph_basics.cpp** - Nodes and edges fundamentals
-- **26_function_nodes.cpp** - Function nodes for computation
-- **27_buffer_nodes.cpp** - Buffering and message passing
-- **28_join_nodes.cpp** - Synchronization of multiple inputs
-- **29_split_nodes.cpp** - Broadcasting to multiple outputs
-
-### **7. Advanced Features** (6 examples)
-Advanced TBB capabilities for specific use cases.
-
-- **30_partitioners.cpp** - Load balancing strategies
-- **31_blocked_range.cpp** - Range splitting for parallelism
-- **32_enumerable_thread_specific.cpp** - Thread-local storage
-- **33_global_control.cpp** - Global runtime parameters
-- **34_task_scheduler_observer.cpp** - Monitoring task execution
-- **35_parallel_deterministic_reduce.cpp** - Deterministic reductions
+> A single, deep, diagram-driven reference for how Intel's oneAPI Threading
+> Building Blocks (oneTBB) actually work: from the work-stealing scheduler and
+> the task model, through the parallel algorithms, concurrent containers, and
+> synchronization primitives, to the Flow Graph and the performance engineering
+> (grain size, false sharing, scalable allocation) that decides whether your
+> parallel code scales or stalls.
+>
+> Written for **C++ engineers who want expert-level mechanical detail**, not a
+> tour of function signatures. Every construct is grounded in *what the runtime
+> does underneath* — the deques, the split trees, the cache lines — with
+> diagrams, compilable C++17, and the trade-offs that matter in production.
 
 ---
 
-## 🚀 Quick Start
+## Who this is for
 
-### **Installation**
+You can already write modern C++. You may have called `std::thread`, sprinkled
+a `#pragma omp parallel for`, or used `std::async`. But you want to *truly*
+understand:
 
-#### Ubuntu/Debian:
-```bash
-sudo apt-get install libtbb-dev
+- Why TBB uses **tasks** instead of threads, and why "1 task = 1 thread" is the
+  classic beginner mistake.
+- How the **work-stealing scheduler** balances load with almost no contention —
+  and why it steals the *oldest* task, not the newest.
+- What **grain size** really controls, and why the wrong value makes parallel
+  code slower than serial.
+- Why `parallel_reduce` results aren't bit-identical across runs (associativity
+  vs floating point).
+- How `concurrent_vector` keeps `&v[i]` valid across growth when `std::vector`
+  can't.
+- What an **accessor** locks in `concurrent_hash_map`, and how holding two
+  deadlocks you.
+- Why **false sharing** can make a 16-core run *slower* than a 1-core run, and
+  how `cache_aligned_allocator` fixes it.
+- When to reach for `spin_mutex` vs `mutex` vs `queuing_mutex` vs an `atomic`.
+- How the **Flow Graph** turns an irregular dependency DAG into scheduled work.
+- Why Amdahl's law caps your speedup, and how to find the serial fraction.
+
+If you finish this guide, you will be able to read the oneTBB headers, reason
+about a `perf`/VTune profile of a parallel program, and design parallelism that
+actually scales on real hardware.
+
+---
+
+## The 30,000-foot map
+
+```
+   you express WHAT is parallel                 the runtime decides WHEN & WHERE
+   ─────────────────────────────                ────────────────────────────────
+
+   parallel_for / reduce / scan  ┐
+   parallel_pipeline             │   split into
+   task_group / flow graph       ├──▶  TASKS  ──┐
+   concurrent containers         ┘               │
+                                                 ▼
+                        ┌───────────────────────────────────────────┐
+                        │        WORK-STEALING SCHEDULER              │
+                        │  each worker owns a deque of ready tasks    │
+                        │  local LIFO (cache-hot) · steal oldest FIFO │
+                        └───────────────────────────────────────────┘
+                                                 │  one worker per core
+                                                 ▼
+                        ┌───────────────────────────────────────────┐
+                        │  OS threads pinned to hardware cores        │
+                        │  + tbbmalloc: per-thread scalable heaps     │
+                        └───────────────────────────────────────────┘
 ```
 
-#### Fedora/RHEL:
+Each box is a chapter this guide dissects. Each arrow is a mechanism with a
+cost, a tuning knob, and a failure mode.
+
+---
+
+## How to read this guide
+
+The parts are ordered as a **learning path** from the scheduler up to production
+performance tuning. If you already know the task model, jump to Part 1
+(algorithms), Part 3 (containers), or Part 7 (performance) — the
+engineering-heavy heart of the guide.
+
+Every chapter has:
+
+- **Concept** sections with hand-drawn diagrams.
+- **The API ▸** call-outs: exact signature, header, and semantics.
+- **Under the hood ▸** boxes: what the scheduler/allocator does underneath.
+- **Example ▸** blocks: compilable, correct C++17 (`-std=c++17 -ltbb`).
+- **Trade-offs ▸** and **Pitfall ▸**: real scaling failures explained by the
+  mechanics.
+- **Tuning ▸**: grain size, partitioners, alignment, and measurement.
+
+---
+
+## Table of contents
+
+### Part 0 — Foundations (`00-foundations/`)
+1. [What is TBB? The big picture](00-foundations/01-what-is-tbb.md)
+2. [Tasks vs threads](00-foundations/02-tasks-vs-threads.md)
+3. [The work-stealing scheduler](00-foundations/03-work-stealing-scheduler.md)
+4. [Ranges, splitting & grain size](00-foundations/04-ranges-and-grain-size.md)
+5. [Partitioners](00-foundations/05-partitioners.md)
+
+### Part 1 — Parallel algorithms (`01-parallel-algorithms/`)
+1. [parallel_for](01-parallel-algorithms/01-parallel-for.md)
+2. [parallel_reduce](01-parallel-algorithms/02-parallel-reduce.md)
+3. [parallel_scan](01-parallel-algorithms/03-parallel-scan.md)
+4. [parallel_sort](01-parallel-algorithms/04-parallel-sort.md)
+5. [parallel_invoke](01-parallel-algorithms/05-parallel-invoke.md)
+6. [parallel_pipeline](01-parallel-algorithms/06-parallel-pipeline.md)
+
+### Part 2 — Task-based programming (`02-task-programming/`)
+1. [task_group](02-task-programming/01-task-group.md)
+2. [task_arena](02-task-programming/02-task-arena.md)
+3. [The task scheduler & control](02-task-programming/03-task-scheduler-and-control.md)
+4. [Continuations & dependencies](02-task-programming/04-continuations-and-dependencies.md)
+
+### Part 3 — Concurrent containers (`03-concurrent-containers/`)
+1. [concurrent_vector](03-concurrent-containers/01-concurrent-vector.md)
+2. [concurrent_queue](03-concurrent-containers/02-concurrent-queue.md)
+3. [concurrent_hash_map](03-concurrent-containers/03-concurrent-hash-map.md)
+4. [concurrent_unordered_map](03-concurrent-containers/04-concurrent-unordered-map.md)
+5. [Bounded & priority queues](03-concurrent-containers/05-bounded-and-priority-queues.md)
+
+### Part 4 — Synchronization (`04-synchronization/`)
+1. [Mutexes: the TBB family](04-synchronization/01-mutexes.md)
+2. [spin_mutex & queuing_mutex](04-synchronization/02-spin-and-queuing-mutex.md)
+3. [Reader-writer locks](04-synchronization/03-reader-writer-locks.md)
+4. [Atomics](04-synchronization/04-atomics.md)
+
+### Part 5 — Memory & thread-local (`05-memory/`)
+1. [The scalable allocator](05-memory/01-scalable-allocator.md)
+2. [Cache alignment & false sharing](05-memory/02-cache-alignment-false-sharing.md)
+3. [Thread-local storage (enumerable_thread_specific)](05-memory/03-thread-local-storage.md)
+
+### Part 6 — Flow Graph (`06-flow-graph/`)
+1. [Flow Graph fundamentals](06-flow-graph/01-flow-graph-intro.md)
+2. [Function & buffer nodes](06-flow-graph/02-function-and-buffer-nodes.md)
+3. [Join & split nodes](06-flow-graph/03-join-and-split-nodes.md)
+4. [Priorities & limiters](06-flow-graph/04-priorities-and-limiters.md)
+
+### Part 7 — Advanced & performance (`07-advanced-performance/`)
+1. [global_control](07-advanced-performance/01-global-control.md)
+2. [task_scheduler_observer](07-advanced-performance/02-task-scheduler-observer.md)
+3. [Deterministic reduction](07-advanced-performance/03-deterministic-reduce.md)
+4. [Performance tuning & Amdahl's law](07-advanced-performance/04-performance-tuning.md)
+5. [Common pitfalls](07-advanced-performance/05-common-pitfalls.md)
+
+### Reference (`99-reference/`)
+- [API cheat sheet](99-reference/api-cheatsheet.md)
+- [Glossary](99-reference/glossary.md)
+
+### Runnable examples (`examples/`)
+35 compilable `.cpp` programs, one per major topic. Build them all with:
+
 ```bash
-sudo yum install tbb-devel
-```
-
-#### macOS:
-```bash
-brew install tbb
-```
-
-#### From Source:
-```bash
-git clone https://github.com/oneapi-src/oneTBB.git
-cd oneTBB
-mkdir build && cd build
-cmake ..
-make -j
-sudo make install
-```
-
-### **Compilation**
-
-```bash
-# Compile single file
-g++ -std=c++17 -O2 01_parallel_for.cpp -ltbb -o parallel_for
-
-# Compile all examples
-make all
-
-# Run tests
-make test
+cd examples && make        # needs a oneTBB install (libtbb-dev / brew install tbb)
 ```
 
 ---
 
-## 📖 Learning Path
+## Conventions used in this guide
 
-### **Beginner** (Start Here)
-1. **parallel_for** - Understand basic parallel loops
-2. **parallel_reduce** - Learn parallel aggregation
-3. **concurrent_vector** - Use thread-safe containers
-4. **mutex** - Basic synchronization
+| Notation / call-out | Meaning                                                    |
+|---------------------|------------------------------------------------------------|
+| **The API ▸**       | Exact signature, header, and semantics                     |
+| **Under the hood ▸**| What the scheduler / allocator does underneath             |
+| **Example ▸**       | Compilable, correct C++17 (`-std=c++17 -ltbb`)             |
+| **Trade-offs ▸**    | Advantages vs disadvantages of a construct                 |
+| **Pitfall ▸**       | A common mistake explained mechanically                    |
+| **Tuning ▸**        | A grain-size / partitioner / alignment lever               |
+| task                | A lightweight unit of work (NOT an OS thread)              |
+| worker              | An OS thread the scheduler runs tasks on (≈ one per core) |
+| grain size          | The smallest subrange the scheduler will not split further |
 
-### **Intermediate**
-5. **task_groups** - Task-based programming
-6. **parallel_pipeline** - Pipeline patterns
-7. **concurrent_hash_map** - Complex containers
-8. **partitioners** - Control load balancing
-
-### **Advanced**
-9. **flow_graph** - Data flow programming
-10. **task_scheduler_observer** - Runtime monitoring
-11. **enumerable_thread_specific** - Advanced TLS
-12. **custom allocators** - Memory optimization
+Namespace note: this guide uses the modern **oneTBB** API under `oneapi::tbb`
+(aliased as `tbb`), e.g. `tbb::parallel_for`, `tbb::concurrent_vector`. The
+legacy `task`-derived API removed in oneTBB is called out where it matters.
 
 ---
 
-## 💡 Key Concepts
+## The one idea that never changes (read this first)
 
-### **1. Task-Based Parallelism**
-TBB uses tasks (lightweight work units) instead of threads:
-- **Advantages**: Better scalability, automatic load balancing
-- **Work-stealing**: Idle threads steal work from busy threads
-- **Overhead**: Much lower than thread creation
+TBB is built on a single trade: **you describe the available parallelism; the
+runtime decides how to realize it.**
 
-### **2. Parallel Patterns**
-Common parallel programming patterns:
-- **Data parallelism**: `parallel_for`, `parallel_reduce`
-- **Pipeline**: `parallel_pipeline`
-- **Fork-join**: `task_group`, `parallel_invoke`
-- **Data flow**: `flow_graph`
-
-### **3. Scalability**
-TBB automatically scales to available cores:
-- No need to specify thread count
-- Adapts to system load
-- Nested parallelism supported
-
-### **4. Performance**
-- **Work-stealing scheduler**: Optimal load balancing
-- **Cache-friendly**: Minimizes cache misses
-- **Lock-free algorithms**: Reduces contention
-- **Scalable allocators**: Eliminates malloc bottleneck
-
----
-
-## 📊 Performance Guidelines
-
-### **When to Use TBB**
-✅ CPU-bound computations  
-✅ Embarrassingly parallel problems  
-✅ Recursive algorithms  
-✅ Pipeline processing  
-✅ Concurrent data structures  
-
-### **When NOT to Use TBB**
-❌ I/O-bound operations (use async I/O instead)  
-❌ Too fine-grained tasks (<10μs per task)  
-❌ Single-threaded performance critical  
-❌ Real-time systems (non-deterministic scheduling)  
-
-### **Best Practices**
-1. **Grain size**: Tasks should take 10-100μs minimum
-2. **Minimize synchronization**: Use concurrent containers
-3. **Avoid false sharing**: Pad data structures to cache lines
-4. **Use partitioners**: Control work distribution
-5. **Profile**: Measure before optimizing
-
----
-
-## 🎓 Common Use Cases
-
-### **1. Image Processing**
 ```cpp
-parallel_for(blocked_range2d<int>(0, height, 0, width),
-    [&](blocked_range2d<int> r) {
-        for(int i=r.rows().begin(); i!=r.rows().end(); ++i)
-            for(int j=r.cols().begin(); j!=r.cols().end(); ++j)
-                output[i][j] = process(input[i][j]);
+#include <oneapi/tbb/parallel_for.h>
+#include <oneapi/tbb/blocked_range.h>
+
+tbb::parallel_for(
+    tbb::blocked_range<size_t>(0, n),          // WHAT can run in parallel
+    [&](const tbb::blocked_range<size_t>& r) { // the runtime picks WHEN/WHERE
+        for (size_t i = r.begin(); i != r.end(); ++i)
+            a[i] = f(a[i]);
     });
 ```
 
-### **2. Monte Carlo Simulation**
-```cpp
-double pi = parallel_reduce(
-    blocked_range<int>(0, N),
-    0.0,
-    [](blocked_range<int> r, double sum) {
-        for(int i=r.begin(); i!=r.end(); ++i)
-            sum += simulate_random();
-        return sum;
-    },
-    std::plus<double>());
-```
+You never create threads, never assign work to a core, never write a steal
+loop. You state that the iterations are independent; the scheduler splits the
+range into tasks, spreads them across workers, and balances the load by
+stealing. Get the *decomposition* and the *grain size* right and the rest is
+automatic. We belabor those two on purpose.
 
-### **3. Web Server Request Processing**
-```cpp
-concurrent_queue<Request> requests;
-parallel_for(blocked_range<int>(0, num_workers),
-    [&](blocked_range<int>) {
-        Request req;
-        while(requests.try_pop(req))
-            process_request(req);
-    });
-```
-
----
-
-## 🔧 Compilation Flags
-
-### **Basic**
-```bash
-g++ -std=c++17 file.cpp -ltbb
-```
-
-### **Optimized**
-```bash
-g++ -std=c++17 -O3 -march=native file.cpp -ltbb
-```
-
-### **Debug**
-```bash
-g++ -std=c++17 -g -D TBB_USE_DEBUG file.cpp -ltbb_debug
-```
-
-### **With TBB Malloc**
-```bash
-g++ -std=c++17 -O3 file.cpp -ltbb -ltbbmalloc
-```
-
----
-
-## 📈 Performance Comparison
-
-| Pattern | Sequential | TBB (4 cores) | TBB (8 cores) | Speedup |
-|---------|-----------|---------------|---------------|---------|
-| Array sum | 100ms | 28ms | 15ms | 6.7x |
-| Sort 1M ints | 150ms | 42ms | 23ms | 6.5x |
-| Image blur | 500ms | 135ms | 72ms | 6.9x |
-| Monte Carlo | 2000ms | 520ms | 270ms | 7.4x |
-
-*Note: Results depend on workload and hardware*
-
----
-
-## 🆚 TBB vs Alternatives
-
-### **TBB vs OpenMP**
-| Feature | TBB | OpenMP |
-|---------|-----|--------|
-| Approach | Library (C++) | Compiler directives |
-| Flexibility | High | Medium |
-| Learning curve | Steeper | Easier |
-| Task-based | Yes | Limited |
-| Concurrent containers | Yes | No |
-
-### **TBB vs std::thread**
-| Feature | TBB | std::thread |
-|---------|-----|-------------|
-| Abstraction | High-level | Low-level |
-| Scheduler | Work-stealing | Manual |
-| Load balancing | Automatic | Manual |
-| Overhead | Low | Higher |
-
-### **TBB vs std::async**
-| Feature | TBB | std::async |
-|---------|-----|-----------|
-| Parallelism | Nested | Limited |
-| Performance | Optimized | Basic |
-| Containers | Yes | No |
-| Algorithms | Many | Few |
-
----
-
-## 📚 Resources
-
-### **Official**
-- [Intel TBB Documentation](https://software.intel.com/content/www/us/en/develop/tools/oneapi/components/onetbb.html)
-- [GitHub Repository](https://github.com/oneapi-src/oneTBB)
-- [Specification](https://spec.oneapi.io/versions/latest/elements/oneTBB/source/nested-index.html)
-
-### **Books**
-- "Pro TBB: C++ Parallel Programming with Threading Building Blocks" by Reinders et al.
-- "Intel Threading Building Blocks" by James Reinders
-- "Structured Parallel Programming" by McCool et al.
-
-### **Tutorials**
-- Intel TBB Tutorial (official)
-- TBB GitHub Wiki
-- This guide! 😊
-
----
-
-## 🎯 Project Statistics
-
-- **Total Examples**: 35
-- **Categories**: 7
-- **Lines of Code**: ~15,000
-- **Concepts Covered**: 50+
-- **Difficulty Levels**: Beginner to Advanced
-
----
-
-## ✅ What You'll Learn
-
-After completing this guide, you will understand:
-
-1. ✅ **Core Concepts**: Tasks, work-stealing, grain size
-2. ✅ **Parallel Algorithms**: All major TBB algorithms
-3. ✅ **Task Programming**: Fine-grained task control
-4. ✅ **Concurrent Containers**: Thread-safe data structures
-5. ✅ **Synchronization**: Mutexes, atomics, locks
-6. ✅ **Memory Management**: Scalable allocators
-7. ✅ **Flow Graphs**: Data flow parallelism
-8. ✅ **Performance**: Optimization and tuning
-9. ✅ **Best Practices**: Real-world patterns
-10. ✅ **Debugging**: Common pitfalls and solutions
-
----
-
-## 🚀 Getting Started
-
-```bash
-cd /tmp/tbb_complete_guide
-
-# Compile all examples
-make all
-
-# Run all tests
-make test
-
-# Run specific example
-./01_parallel_for
-
-# Read detailed guide
-cat COMPLETE_TBB_GUIDE.md
-```
-
----
-
-## 📝 License
-
-Educational purposes. Examples based on Intel TBB documentation and best practices.
-
----
-
-**Happy Parallel Programming!** 🎉
-
-*Note: TBB version used in examples: oneTBB (open-source version)*
-
+Let's begin. → [Part 0.1: What is TBB?](00-foundations/01-what-is-tbb.md)
