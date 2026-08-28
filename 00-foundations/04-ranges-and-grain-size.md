@@ -30,13 +30,13 @@ with the other. When `is_divisible()` returns false, the range is a **leaf** —
 one body invocation runs it serially.
 
 > **The API ▸** Standard 1D range:
->
-> ```cpp
-> #include <oneapi/tbb/blocked_range.h>
-> tbb::blocked_range<size_t>(begin, end);              // default grainsize = 1
-> tbb::blocked_range<size_t>(begin, end, grain_size);
-> ```
->
+
+```cpp
+  #include <oneapi/tbb/blocked_range.h>
+  tbb::blocked_range<size_t>(begin, end);              // default grainsize = 1
+  tbb::blocked_range<size_t>(begin, end, grain_size);
+```
+
 > 2D / 3D: `<oneapi/tbb/blocked_range2d.h>`,
 > `<oneapi/tbb/blocked_range3d.h>`. Semantics: half-open intervals `[begin, end)`
 > in each dimension; split bisects the **largest** dimension that exceeds grain.
