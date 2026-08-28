@@ -52,20 +52,20 @@ actually scales on real hardware.
 
    parallel_for / reduce / scan  ┐
    parallel_pipeline             │   split into
-   task_group / flow graph       ├──▶  TASKS  ──┐
+   task_group / flow graph       ├──▶  TASKS   ──┐
    concurrent containers         ┘               │
                                                  ▼
-                        ┌───────────────────────────────────────────┐
+                        ┌─────────────────────────────────────────────┐
                         │        WORK-STEALING SCHEDULER              │
                         │  each worker owns a deque of ready tasks    │
                         │  local LIFO (cache-hot) · steal oldest FIFO │
-                        └───────────────────────────────────────────┘
+                        └─────────────────────────────────────────────┘
                                                  │  one worker per core
                                                  ▼
-                        ┌───────────────────────────────────────────┐
+                        ┌─────────────────────────────────────────────┐
                         │  OS threads pinned to hardware cores        │
                         │  + tbbmalloc: per-thread scalable heaps     │
-                        └───────────────────────────────────────────┘
+                        └─────────────────────────────────────────────┘
 ```
 
 Each box is a chapter this guide dissects. Each arrow is a mechanism with a
@@ -170,7 +170,7 @@ cd examples && make        # needs a oneTBB install (libtbb-dev / brew install t
 | **Pitfall ▸**       | A common mistake explained mechanically                    |
 | **Tuning ▸**        | A grain-size / partitioner / alignment lever               |
 | task                | A lightweight unit of work (NOT an OS thread)              |
-| worker              | An OS thread the scheduler runs tasks on (≈ one per core) |
+| worker              | An OS thread the scheduler runs tasks on (≈ one per core)  |
 | grain size          | The smallest subrange the scheduler will not split further |
 
 Namespace note: this guide uses the modern **oneTBB** API under `oneapi::tbb`
