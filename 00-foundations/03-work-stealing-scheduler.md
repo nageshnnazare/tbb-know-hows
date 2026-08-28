@@ -245,14 +245,14 @@ work onto deques.
 
 > **The API ▸** Scheduling is implicit — no public "steal" or "push task" in
 > `parallel_for`. Explicit task injection:
->
-> ```cpp
-> #include <oneapi/tbb/task_group.h>
-> tbb::task_group g;
-> g.run([] { /* task body */ });
-> g.wait();
-> ```
->
+
+```cpp
+  #include <oneapi/tbb/task_group.h>
+  tbb::task_group g;
+  g.run([] { /* task body */ });
+  g.wait();
+```
+
 > `run()` enqueues a task on the current arena's scheduler; execution follows the
 > same deque/steal rules described here.
 
