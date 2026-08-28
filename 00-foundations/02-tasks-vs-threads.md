@@ -220,14 +220,14 @@ share one pool — impossible to coordinate this cleanly with ad-hoc threads.
 
 > **The API ▸** You rarely construct tasks directly in modern oneTBB. Instead you
 > call high-level entry points that create them for you:
->
-> ```cpp
-> #include <oneapi/tbb/parallel_for.h>
-> tbb::parallel_for(range, body);           // algorithms → tasks
-> #include <oneapi/tbb/task_group.h>
-> tbb::task_group g; g.run([]{ ... });       // explicit unstructured tasks
-> ```
->
+
+```cpp
+  #include <oneapi/tbb/parallel_for.h>
+  tbb::parallel_for(range, body);           // algorithms → tasks
+  #include <oneapi/tbb/task_group.h>
+  tbb::task_group g; g.run([]{ ... });       // explicit unstructured tasks
+```
+
 > Headers: `<oneapi/tbb/parallel_for.h>`, `<oneapi/tbb/task_group.h>`. Semantics:
 > the callable runs **eventually** on some worker; ordering across tasks is not
 > guaranteed unless synchronized.
