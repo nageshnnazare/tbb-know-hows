@@ -34,20 +34,19 @@ The partitioner works **with** `grainsize()` from the range (Part 0.4), not
 instead of it.
 
 > **The API ▸**
->
-> ```cpp
-> #include <oneapi/tbb/partitioner.h>
-> tbb::auto_partitioner();
-> tbb::simple_partitioner();
-> tbb::static_partitioner();
-> tbb::affinity_partitioner ap;   // reusable object; pass by reference
-> ```
->
+```cpp
+  #include <oneapi/tbb/partitioner.h>
+  tbb::auto_partitioner();
+  tbb::simple_partitioner();
+  tbb::static_partitioner();
+  tbb::affinity_partitioner ap;   // reusable object; pass by reference
+```
+
 > Signature pattern:
-> ```cpp
-> template<typename Range, typename Body, typename Partitioner>
-> void parallel_for(const Range& r, const Body& body, const Partitioner& p);
-> ```
+```cpp
+  template<typename Range, typename Body, typename Partitioner>
+  void parallel_for(const Range& r, const Body& body, const Partitioner& p);
+```
 > Header: `<oneapi/tbb/parallel_for.h>`. Default partitioner is **`auto_partitioner`**.
 
 ---
