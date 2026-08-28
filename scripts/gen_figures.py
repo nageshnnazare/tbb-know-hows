@@ -42,8 +42,9 @@ MONO = ("'Virgil','SFMono-Regular',ui-monospace,'JetBrains Mono',Consolas,"
 RULE = 1.5
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+#FONT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 FONT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                         "Virgil.woff2")
+                         "JetBrains Mono Nerd Font Regular.woff2")
 
 USED_CHARS = set()
 FONT_STYLE = ""
