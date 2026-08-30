@@ -43,17 +43,17 @@ tbb::parallel_for(
 
 > **The API ▸**
 > ```cpp
-> // <oneapi/tbb/parallel_for.h>
-> template<typename Index, typename Function>
-> void parallel_for(Index first, Index last, const Function& f);
-> template<typename Index, typename Function>
-> void parallel_for(Index first, Index last, Index step, const Function& f);
-> template<typename Range, typename Body>
-> void parallel_for(const Range& range, const Body& body,
->                   const auto_partitioner& = auto_partitioner{});
-> template<typename Range, typename Body, typename Partitioner>
-> void parallel_for(const Range& range, const Body& body, Partitioner partitioner);
-> ```
+// <oneapi/tbb/parallel_for.h>
+  template<typename Index, typename Function>
+  void parallel_for(Index first, Index last, const Function& f);
+  template<typename Index, typename Function>
+  void parallel_for(Index first, Index last, Index step, const Function& f);
+  template<typename Range, typename Body>
+  void parallel_for(const Range& range, const Body& body,
+                    const auto_partitioner& = auto_partitioner{});
+  template<typename Range, typename Body, typename Partitioner>
+  void parallel_for(const Range& range, const Body& body, Partitioner partitioner);
+```
 > **Semantics:** `parallel_for` does not return until every subrange has been processed.
 > Iterations must be **independent** — no iteration may read/write state that another
 > iteration also mutates unless you synchronize (which defeats the purpose).
