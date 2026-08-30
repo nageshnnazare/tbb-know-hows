@@ -42,7 +42,7 @@ tbb::parallel_for(
 ```
 
 > **The API ▸**
-> ```cpp
+```cpp
 // <oneapi/tbb/parallel_for.h>
   template<typename Index, typename Function>
   void parallel_for(Index first, Index last, const Function& f);
